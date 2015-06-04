@@ -10,6 +10,8 @@ DNAbases = ['A','G','C','T']
 # first line with DNA data
 first_polymorphism = 0
 snplist = []
+# number of genotypes
+samples = 0
 
 
 # generate list of potential SNPs consisting of two letters and of SNP types
@@ -47,14 +49,14 @@ file = open ('1001genomes_snp_short_indel_only_ACGTN_1Mb_100acc.vcf')
 
 # count lines in file
 with file as f:
-    for i, l in enumerate(f):
+    for lines_in_file, l in enumerate(f):
         pass
 
-print(i)
+file = open ('1001genomes_snp_short_indel_only_ACGTN_1Mb_100acc.vcf')
 
-exit()
+file.seek(0)
 
-# find first line that does not start with ##
+# determine whether it's a VCF file
 current_line = file.readline()
 print('First line: ', current_line)
 if current_line.find('vcf', 0, len(current_line)):
@@ -67,11 +69,14 @@ else:
 # set read pointer back to beginning of file
 file.seek(0)
 
+# find header line
 for line in range(100):
     first_polymorphism += 1
     current_line = file.readline()
-    first = current_line.__getitem__(0)
-    if first != '#':
+    elements_cl = current_line.split()
+    if elements_cl[0] == '#CHROM':
+        samples = len(elements_cl) - 9
+        print("samples", samples)
         break
 
 # set read pointer back to beginning of file
@@ -80,12 +85,13 @@ file.seek(0)
 print('First line with genotype information is line ',first_polymorphism, '\n')
 
 # go back to first line before polymorphism
-for line in range(first_polymorphism-1):
+for line in range(first_polymorphism):
     file.readline()
 
 # start analyzing lines
 
-for line in range(200):
+for line in range(lines_in_file - first_polymorphism + 1):
+# for line in range(6):
     # convert current_line into list elements_cl
     current_line = file.readline()
     elements_cl = current_line.split()
@@ -102,7 +108,10 @@ for line in range(200):
     else:
         snplist[line].s = change
         snplist[line].t = transition_transversion[substitution_types.index(change)]
-    snplist[line].print()
+    if int(elements_cl[1]) < 100 or int(elements_cl[1]) > 999400:
+        snplist[line].print()
+
+
 
 
 
