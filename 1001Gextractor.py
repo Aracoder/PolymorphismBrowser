@@ -5,46 +5,54 @@ __author__ = 'weigel'
 
 # global variables
 
-DNAbases = ['A','T','C','G']
-SNPlist = []
-
-# translate SNPs into numeric codes
-# None 0000
-# A>T 2
-# A>C 3
-# A>G 4
-# T>A 10
-# T>C 30
-# T>G 40
-# C>A 100
-# C>T 200
-# C>G 400
-# G>A 1000
-# G>T 2000
-# G>C 3000
-
-# generate numeric codes
-SNPcodes = []
-for ref in range(4):
-    for alt in range(4):
-        if ref == alt:
-            SNPcodes.append(0000)
-        else:
-            SNPcodes.append(10**(ref) * (alt+1))
-    # code 5555 for polymorphism that is not a SNP
-    SNPcodes.append(5555)
-
-# generate list of SNP types consisting of two letters
-SNPtypes = []
-for ref in range(4):
-    for alt in range(4):
-        SNPtypes.append(DNAbases[ref] + DNAbases[alt])
-
+# the four bases
+DNAbases = ['A','G','C','T']
 # first line with DNA data
 first_polymorphism = 0
+snplist = []
+
+
+# generate list of potential SNPs consisting of two letters and of SNP types
+# substitution_types = ['AA', 'AG', 'AC', 'AT', 'GA', 'GG', 'GC', 'GT', 'CA', 'CG', 'CC', 'CT', 'TA', 'TG', 'TC', 'TT']
+# transition_transversion = ['notaSNP', 'trstn', 'trvsn', 'trvsn', 'trstn', 'notaSNP', 'trvsn', 'trvsn', 'trvsn', 'trvsn', 'notaSNP', 'trstn', 'trvsn', 'trvsn', 'trstn', 'notaSNP']
+
+substitution_types = []
+transition_transversion = []
+numbers = []
+for ref in range(4):
+    for alt in range(4):
+        substitution_types.append(DNAbases[ref] + DNAbases[alt])
+        if ref == alt:
+            transition_transversion.append('notaSNP')
+        elif (ref+alt) in [1,5]:
+            transition_transversion.append('trstn')
+        else:
+            transition_transversion.append('trvsn')
+
+
+# define class SNP
+class SNP:
+    def __init__(self, position=0, snp='', snptype='', annotation='', methylation=''):
+        self.p = position
+        self.s = snp
+        self.t = snptype
+        self.a = annotation
+        self.m = methylation
+
+    def print(self):
+        print(self.p, self.s, self.t)
 
 # Read a .vcf file
 file = open ('1001genomes_snp_short_indel_only_ACGTN_1Mb_100acc.vcf')
+
+# count lines in file
+with file as f:
+    for i, l in enumerate(f):
+        pass
+
+print(i)
+
+exit()
 
 # find first line that does not start with ##
 current_line = file.readline()
@@ -77,25 +85,24 @@ for line in range(first_polymorphism-1):
 
 # start analyzing lines
 
-for line in range(10):
+for line in range(200):
     # convert current_line into list elements_cl
     current_line = file.readline()
     elements_cl = current_line.split()
-    print(elements_cl)
     # positions: multiply chr with 1,000,000, add positions
-    c_pos = int(elements_cl[0]) * 1000000 + int(elements_cl[1])
-    print(c_pos)
+    snplist.append(SNP())
+    snplist[line].p = int(elements_cl[0]) * 1000000 + int(elements_cl[1])
     # determine whether a position is a SNP or insertion or not, and if a SNP, what type of SNP
     ref = elements_cl[3]
     alt = elements_cl[4]
-    print(ref,alt)
-    if alt not in ['A','T','C','G']:
-        SNPlist.append(5555)
+    change = ref + alt
+    if not change in substitution_types:
+        snplist[line].s = 'notaSNP'
+        snplist[line].t = 'NA'
     else:
-        SNP = ref + alt
-        SNPlist.append(SNPcodes[SNPtypes.index(SNP)])
-        print (SNPlist)
-
+        snplist[line].s = change
+        snplist[line].t = transition_transversion[substitution_types.index(change)]
+    snplist[line].print()
 
 
 
