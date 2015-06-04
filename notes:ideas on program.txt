@@ -1,0 +1,20 @@
+notes/ideas on program
+
+positions: multiply chr with 1000000, add positions
+
+determine whether a position is a SNP or insertion or not
+
+SNPs
+None 0000
+A>T 2000
+A>C 3000
+A>G 4000
+T>A 0100
+T>C 0300
+T>G 0400
+C>A 0010
+C>T 0020
+C>G 0040
+G>A 0001
+G>T 0002
+G>C 0003
