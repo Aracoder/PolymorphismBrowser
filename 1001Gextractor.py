@@ -6,6 +6,7 @@ __author__ = 'weigel'
 # global variables
 
 DNAbases = ['A','T','C','G']
+SNPlist = []
 
 # translate SNPs into numeric codes
 # None 0000
@@ -30,12 +31,14 @@ for ref in range(4):
             SNPcodes.append(0000)
         else:
             SNPcodes.append(10**(ref) * (alt+1))
+    # code 5555 for polymorphism that is not a SNP
+    SNPcodes.append(5555)
 
-# genrate list of SNP types consisting of two letters
-SNPs = []
+# generate list of SNP types consisting of two letters
+SNPtypes = []
 for ref in range(4):
     for alt in range(4):
-        SNPs.append(DNAbases[ref] + DNAbases[alt])
+        SNPtypes.append(DNAbases[ref] + DNAbases[alt])
 
 # first line with DNA data
 first_polymorphism = 0
@@ -82,29 +85,17 @@ for line in range(10):
     # positions: multiply chr with 1,000,000, add positions
     c_pos = int(elements_cl[0]) * 1000000 + int(elements_cl[1])
     print(c_pos)
-    # determine whether a position is a SNP or insertion or not
-    # SNPs
-    # None 0000
-    # A>T 2000
-    # A>C 3000
-    # A>G 4000
-    # T>A 0100
-    # T>C 0300
-    # T>G 0400
-    # C>A 0010
-    # C>T 0020
-    # C>G 0040
-    # G>A 0001
-    # G>T 0002
-    # G>C 0003
+    # determine whether a position is a SNP or insertion or not, and if a SNP, what type of SNP
     ref = elements_cl[3]
     alt = elements_cl[4]
-    if alt in ['A','T','C','G']:
-        print("it's a SNP")
-
-
+    print(ref,alt)
+    if alt not in ['A','T','C','G']:
+        SNPlist.append(5555)
     else:
-        print("it's not a SNP")
+        SNP = ref + alt
+        SNPlist.append(SNPcodes[SNPtypes.index(SNP)])
+        print (SNPlist)
+
 
 
 
