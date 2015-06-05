@@ -8,10 +8,15 @@ __author__ = 'weigel'
 # the four bases
 DNAbases = ['A','G','C','T']
 # first line with DNA data
-firstPolymorphism = 0
-snpList = []
+headerLine = 0
+# initialize variant list - holds objects of the Variant class
+variantList = []
 # number of genotypes
 samples = 0
+# number of variants
+variantCounter = 0
+# accession IDs
+accessions = []
 
 
 # generate list of potential SNPs consisting of two letters and of SNP types
@@ -20,7 +25,7 @@ samples = 0
 
 substitutionTypes = []
 transitionTransversion = []
-numbers = []
+
 for ref in range(4):
     for alt in range(4):
         substitutionTypes.append(DNAbases[ref] + DNAbases[alt])
@@ -33,17 +38,20 @@ for ref in range(4):
 
 
 # define class SNP
-class SNP:
-    def __init__(self, position=0, snp='', snpType='', snpFrequency=0, annotation='', methylation=''):
+class Variant:
+    def __init__(self, position=0, variant='', variantType='', variantFrequency=0, alleleDistribution=[], missingData=0, missingDistribution=[], annotation='', methylation=''):
         self.p = position
-        self.s = snp
-        self.t = snpType
-        self.f = snpFrequency
-        self.a = annotation
-        self.m = methylation
+        self.v = variant
+        self.t = variantType
+        self.f = variantFrequency
+        self.a = alleleDistribution
+        self.m = missingData
+        self.md = missingDistribution
+        self.an = annotation
+        self.mt = methylation
 
     def print(self):
-        print(self.p, self.s, self.t, self.f, self.a, self.m)
+        print(self.p, self.v, self.t, self.f, self.a, self.m, self.md, self.an, self.mt)
 
 # Read a .vcf file
 file = open ('1001genomes_snp_short_indel_only_ACGTN_1Mb_100acc.vcf')
@@ -72,46 +80,78 @@ file.seek(0)
 
 # find header line
 for line in range(100):
-    firstPolymorphism += 1
+    headerLine += 1
     currentLine = file.readline()
     elementsCL = currentLine.split()
     if elementsCL[0] == '#CHROM':
-        samples = len(elementsCL) - 9
+        samples = len(elementsCL) - headerLine
         print("There are", samples, "samples.")
+        accessions = elementsCL[headerLine:headerLine+samples]
+        print(accessions)
         break
 
 # set read pointer back to beginning of file
 file.seek(0)
 
-print('First line with genotype information is line '+str(firstPolymorphism+1)+"." '\n')
+print('Header line is line '+str(headerLine)+"." '\n')
 
-# go back to first line before polymorphism
-for line in range(firstPolymorphism):
+# go back to first line before first data lines
+for line in range(headerLine):
     file.readline()
 
 
 # start analyzing lines
-for line in range(linesInFile - firstPolymorphism +1):
+for line in range(linesInFile - headerLine +1):
     # convert current_line into list elements_cl
     currentLine = file.readline()
     elementsCL = currentLine.split()
-    # positions: multiply chr with 1,000,000, add positions
-    snpList.append(SNP())
-    snpList[line].p = int(elementsCL[0]) * 1000000 + int(elementsCL[1])
-    # determine whether a position is a SNP or insertion or not, and if a SNP, what type of SNP
-    ref = elementsCL[3]
-    alt = elementsCL[4]
-    change = ref + alt
-    if not change in substitutionTypes:
-        snpList[line].s = 'notaSNP'
-        snpList[line].t = 'NA'
-    else:
-        snpList[line].s = change
-        snpList[line].t = transitionTransversion[substitutionTypes.index(change)]
-    # count number of lines with SNP
+
+
+    alleleCounter = 0
+    alleleDistribution = []
+    missingCounter = 0
+    missingDistribution = []
+    # count accessions with variant, store in alleleDistribution
+    # count accessions with missing info, store in missingDistribution
     for accession in range(9,samples+9):
         if elementsCL[accession].startswith('1|1'):
-            snpList[line].f += 1
+            alleleCounter += 1
+            alleleDistribution.append(accessions[accession-9])
+        elif elementsCL[accession].startswith('./.'):
+            missingCounter += 1
+            missingDistribution.append(accessions[accession-9])
+
+    # add to variant list only if there are variants
+    if alleleCounter > 0:
+        # increment variantCounter
+        variantCounter =+ 1
+        # append instance of variant to variant list
+        variantList.append(Variant())
+        # positions: multiply chr with 1,000,000, add positions
+        variantList[variantCounter-1].p = int(elementsCL[0]) * 1000000 + int(elementsCL[1])
+        # record allele frequency
+        variantList[variantCounter-1].f = alleleCounter
+        # store info on accessions containing variant
+        variantList[variantCounter-1].a = alleleDistribution
+        # record missing data frequency
+        variantList[variantCounter-1].m = missingCounter
+        # store info on accessions with missing info
+        variantList[variantCounter-1].md = missingDistribution
+        # determine whether a position is a SNP or insertion or not, and if a SNP, what type of SNP
+        ref = elementsCL[3]
+        alt = elementsCL[4]
+        # store info on variant sequence change
+        variantList[variantCounter-1].v = ref + '|' + alt
+        # store info on variant type
+        if len(ref) > 1 and len(alt) == 1:
+            variantList[variantCounter-1].t = 'delet'
+        elif len(ref) == 1 and len(alt) > 1:
+            variantList[variantCounter-1].t = 'inser'
+        elif len(ref) > 1 and len(alt) > 1:
+            variantList[variantCounter-1].t = 'cmplx'
+        else:
+            variantList[variantCounter-1].t = transitionTransversion[substitutionTypes.index(ref+alt)]
+        # count missing data
 
 
 
@@ -119,8 +159,8 @@ for line in range(linesInFile - firstPolymorphism +1):
 
 
 
-    if int(elementsCL[1]) < 100 or int(elementsCL[1]) > 999400:
-        snpList[line].print()
+        if int(elementsCL[1]) < 500 or int(elementsCL[1]) > 999000:
+            variantList[variantCounter-1].print()
 
 
 
